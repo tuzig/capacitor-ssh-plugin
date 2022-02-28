@@ -4,7 +4,7 @@ import NMSSH_riden
 
 @objc(SSHPlugin) public class SSHPlugin: CAPPlugin {
     // to remove a session: sessions[hash] = nil
-    private var sessions: [String: NMSSHSession] = [:]
+    private var sessions: [String: Session] = [:]
     private var channels: [String: Channel] = [:]
     private let keyLen = 8
     func generateKey() -> String {
@@ -15,24 +15,15 @@ import NMSSH_riden
         guard let host = call.getString("hostname") else {
             return call.reject("Must provide a hostname") }
         let port = call.options["port"] as? Int ?? 22
-
         guard let user = call.getString("username") else {
             return call.reject("Must provide a username") }
         guard let pass = call.getString("password") else {
             return call.reject("Must provide a password") }
-        let session = NMSSHSession(host: host, configs: [], withDefaultPort: port, defaultUsername: user)
-        session.connect()
-        if session.isConnected {
-            session.authenticate(byPassword: pass)
-            if session.isAuthorized {
-                let key = generateKey()
-                sessions[key] = session
-                call.resolve(["session": key])
-            } else {
-                call.reject("Wrong password")
-            }
-        } else {
-            call.reject("Failed to connect")
+        let session = Session(host: host, port: port, username: user)
+        if session.connect(call: call, password: pass) {
+            let key = generateKey()
+            sessions[key] = session
+            call.resolve(["session": key])
         }
     }
     @objc func newChannel(_ call: CAPPluginCall) {
@@ -42,7 +33,7 @@ import NMSSH_riden
         guard let session = sessions[sessionKey] else {
             return call.reject("Bad session id")
         }
-        let channel = Channel(call: call, session: session)
+        let channel = Channel(call: call, session: session.session)
         let key = generateKey()
         channels[key] = channel
         call.resolve(["channel": key])
@@ -55,6 +46,16 @@ import NMSSH_riden
             return call.reject("Bad channel id")
         }
         channel.startShell()
+    }
+    @objc func closeSession(_ call: CAPPluginCall) {
+        guard let key = call.getString("session") else {
+            return call.reject("Missing session id")
+        }
+        guard let session = sessions[key] else {
+            return call.reject("Bad session id")
+        }
+        session.session.disconnect()
+        sessions[key] = nil
     }
     @objc func closeChannel(_ call: CAPPluginCall) {
         guard let key = call.getString("channel") else {
@@ -80,7 +81,51 @@ import NMSSH_riden
     }
 
 }
-@objc public class Channel: NSObject, NMSSHChannelDelegate {
+@objc private class Session: NSObject, NMSSHSessionDelegate {
+    var call: CAPPluginCall?
+    var session: NMSSHSession
+    var password: String?
+    init(host: String, port: Int, username: String) {
+        self.session = NMSSHSession(host: host, configs: [], withDefaultPort: port,
+                                    defaultUsername: username)
+    }
+    func connect(call: CAPPluginCall, password: String) -> Bool {
+        self.call = call
+        self.password = password
+        let session = self.session
+        session.delegate = self
+        session.connect()
+        if session.isConnected {
+            session.authenticate(byPassword: password)
+            if session.isAuthorized {
+                call.keepAlive = true
+            } else {
+                call.reject("Wrong password")
+                return false
+            }
+        } else {
+            call.reject("Failed to connect")
+            return false
+        }
+        return true
+    }
+    @objc public func session(_ session: NMSSHSession, keyboardInteractiveRequest request: String) -> String {
+        if let pass = self.password {
+            return pass
+        } else {
+            return ""
+        }
+    }
+    @objc public func session(_ session: NMSSHSession, didDisconnectWithError error: Error) {
+        if let call = self.call {
+            call.reject(error.localizedDescription)
+        }
+    }
+    @objc public func session(_ session: NMSSHSession, shouldConnectToHostWithFingerprint msg: String) -> Bool {
+        return true
+    }
+}
+@objc private class Channel: NSObject, NMSSHChannelDelegate {
     var call: CAPPluginCall
     var channel: NMSSHChannel
     init(call: CAPPluginCall, session: NMSSHSession) {
