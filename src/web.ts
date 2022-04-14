@@ -1,20 +1,28 @@
 import { WebPlugin } from '@capacitor/core';
 
-import type { SSHPlugin, SessionByPasswd, TerminalType, ChannelCallback } from './definitions';
+import type { SSHPlugin, SSHSessionByPass, SSHSessionID, TerminalType, SSHChannelID, ChannelCallback, SSHID } from './definitions';
 
 export class SSHWeb extends WebPlugin implements SSHPlugin {
-  public startSessionByPasswd = async (_: SessionByPasswd): Promise<{ session: string}> => {
+  CB: ChannelCallback | undefined
+  startSessionByPasswd = async (_: SSHSessionByPass): Promise<SSHID> => {
       throw this.unimplemented('Not implemented on web.');
   }
-  public startShell = async (_: { pty: TerminalType } , __: ChannelCallback): Promise< {channel:string }> => {
+  newChannel(_: { session: SSHSessionID, pty?: TerminalType}): Promise<{ id: number }> {
       throw this.unimplemented('Not implemented on web.');
   }
-  public writeToChannel = async (_: { channel: string, s: string }): Promise< { error: string} > => {
+  startShell(_: { channel: SSHChannelID} , callback: ChannelCallback): Promise<string> {
+      this.CB = callback
+      throw this.unimplemented('Not implemented on web.');
+  };
+  writeToChannel = async (_: { channel: number, s: string }): Promise< { error: string} > => {
       throw this.unimplemented('Not implemented on web.');
   }
-  public closeShell= async (_: { channel: string }): Promise<void> => {
+  closeShell= async (_: { channel: number }): Promise<void> => {
       throw this.unimplemented('Not implemented on web.');
   }
+  setPtySize(_: { channel: number, width: number, height: number }): Promise<void> {
+      throw this.unimplemented('Not implemented on web.');
+  };
   /*
   startSessionByKeys(options: SessionByKeys): Promise<{ session: string}>;
   isHostKnown(options: { session: string } ): Promise< KnownHostStatus >;
