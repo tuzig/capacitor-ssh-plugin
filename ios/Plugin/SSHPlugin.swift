@@ -7,7 +7,6 @@ private func generateKey(length: Int = 10) -> String {
   return String((0..<length).map{ _ in letters.randomElement()! })
 }
 @objc(SSHPlugin) public class SSHPlugin: CAPPlugin {
-    // to remove a session: sessions[hash] = nil
     private var sessions: [String: Session] = [:]
     private var channels: [Int: Channel] = [:]
     private var lastChannleID: Int = 0
@@ -22,9 +21,9 @@ private func generateKey(length: Int = 10) -> String {
         let session = Session(host: host, port: port, username: user)
         if session.connect(call: call, password: pass) {
             let key = generateKey()
-            sessions[key] = session
+            self.sessions[key] = session
             call.resolve(["session": key])
-        }
+        } // no need for an else as the call was already rejected
     }
     @objc func newChannel(_ call: CAPPluginCall) {
         guard let sessionKey = call.getString("session") else {
@@ -46,8 +45,7 @@ private func generateKey(length: Int = 10) -> String {
         guard let channel = self.channels[key] else {
             return call.reject("Bad channel id")
         }
-        channel.call = call
-        channel.startShell()
+        channel.startShell(call)
     }
     @objc func closeSession(_ call: CAPPluginCall) {
         guard let key = call.getString("session") else {
@@ -58,6 +56,7 @@ private func generateKey(length: Int = 10) -> String {
         }
         session.session.disconnect()
         self.sessions[key] = nil
+        call.resolve()
     }
     @objc func closeChannel(_ call: CAPPluginCall) {
         guard let key = call.getInt("channel") else {
@@ -68,6 +67,7 @@ private func generateKey(length: Int = 10) -> String {
         }
         channel.closeChannel()
         self.channels[key] = nil
+        call.resolve()
     }
     @objc func writeToChannel(_ call: CAPPluginCall) {
         guard let key = call.getInt("channel") else {
@@ -137,6 +137,7 @@ private func generateKey(length: Int = 10) -> String {
     }
     @objc public func session(_ session: NMSSHSession, didDisconnectWithError error: Error) {
         if let call = self.call {
+            print("SSH Session disconnect with error", error)
             call.reject(error.localizedDescription)
         }
     }
@@ -152,19 +153,21 @@ private func generateKey(length: Int = 10) -> String {
         self.channel.requestPty = true
         self.call = call
     }
-    func startShell() {
+    func startShell(_ call: CAPPluginCall) {
+        self.call = call
         self.channel.requestPty = true
         self.channel.ptyTerminalType = NMSSHChannelPtyTerminal.xterm
         self.channel.delegate = self
+        self.call.keepAlive = true
         do {
             try self.channel.startShell()
-            self.call.keepAlive = true
         } catch {
             self.call.reject("Failed to start shell")
         }
     }
     func closeChannel() {
         self.channel.close()
+        self.call.keepAlive = false
     }
     func write(message: String) {
         do {
@@ -176,15 +179,15 @@ private func generateKey(length: Int = 10) -> String {
     func resize(width: UInt, height: UInt) {
         self.channel.requestSizeWidth(width, height: height)
     }
-    // channel delegates
+    // channel delegates - we can only use resolve() 
     @objc public func channel(_ channel: NMSSHChannel, didReadRawData message: Data)  {
         self.call.resolve(["data": String(decoding: message, as: UTF8.self)])
     }
     @objc public func channel(_ channel: NMSSHChannel, didReadError error: String) {
-        self.call.reject(error)
+        self.call.resolve(["ERROR": error])
     }
     @objc public func channelShellDidClose(_ channel: NMSSHChannel) {
-        self.call.reject("Shell Did Close")
-        // TODO: remove channel from channels
+        self.call.resolve(["EOF": true])
+        // self.call.reject("Shell Did Close")
     }
 }

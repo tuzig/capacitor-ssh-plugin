@@ -17,7 +17,7 @@ export class SSHWeb extends WebPlugin implements SSHPlugin {
   writeToChannel = async (_: { channel: number, s: string }): Promise< { error: string} > => {
       throw this.unimplemented('Not implemented on web.');
   }
-  closeShell= async (_: { channel: number }): Promise<void> => {
+  closeChannel= async (_: { channel: number }): Promise<void> => {
       throw this.unimplemented('Not implemented on web.');
   }
   setPtySize(_: { channel: number, width: number, height: number }): Promise<void> {

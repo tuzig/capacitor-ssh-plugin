@@ -37,7 +37,7 @@ export interface SSHPlugin {
   newChannel(options: { session: SSHSessionID, pty?: TerminalType}): Promise< { id: number } >
   startShell(options: { channel: SSHChannelID } , callback: ChannelCallback): Promise<string>
   writeToChannel(options: { channel: number, s: string }): Promise<void>
-  closeShell(options: { channel: number }): Promise<void>
+  closeChannel(options: { channel: number }): Promise<void>
   setPtySize(options: { channel: number, width: number, height: number }): Promise<void>
   /*
   startSessionByKeys(options: SessionByKeys): Promise<{ session: string}>;
