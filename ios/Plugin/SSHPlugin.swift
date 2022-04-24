@@ -9,6 +9,7 @@ private func generateKey(length: Int = 10) -> String {
 @objc(SSHPlugin) public class SSHPlugin: CAPPlugin {
     private var sessions: [String: Session] = [:]
     private var channels: [Int: Channel] = [:]
+    private var streamChannels: [Int: Channel] = [:]
     private var lastChannleID: Int = 0
     @objc func startSessionByPasswd(_ call: CAPPluginCall) {
         guard let host = call.getString("address") else {
@@ -46,6 +47,28 @@ private func generateKey(length: Int = 10) -> String {
             return call.reject("Bad channel id")
         }
         channel.startShell(call)
+    }
+    @objc func execute(_ call: CAPPluginCall) {
+        guard let key = call.getInt("channel") else {
+            return call.reject("Missing channel id")
+        }
+        guard let channel = self.channels[key] else {
+            return call.reject("Bad channel id")
+        }
+        channel.execute(call)
+    }
+    @objc func startCommand(_ call: CAPPluginCall) {
+        guard let sessionKey = call.getString("session") else {
+            return call.reject("Missing session id")
+        }
+        guard let session = self.sessions[sessionKey] else {
+            return call.reject("Bad session id")
+        }
+        let channel = Channel(call: call, session: session.session)
+        let key = Int(call.callbackId) ?? 0
+        print("saving with key", key)
+        self.channels[key] = channel
+        channel.startCommand(call)
     }
     @objc func closeSession(_ call: CAPPluginCall) {
         guard let key = call.getString("session") else {
@@ -145,12 +168,30 @@ private func generateKey(length: Int = 10) -> String {
         return true
     }
 }
+@objc private class CommandStream: NSObject, NMSSHChannelStreamReceiveDelegate {
+    var call: CAPPluginCall
+    init(call: CAPPluginCall) {
+        self.call = call
+    }
+    @objc public func onStdout(_ message: String) {
+        self.call.resolve(["stdout": message])
+    }
+    @objc public func onStderr(_ message: String) {
+        self.call.resolve(["stderr": message])
+    }
+    @objc public func onExit(_ exitCode: NSNumber, exitSignal: String?) {
+        self.call.resolve(["exit": exitSignal, "code": exitCode])
+    }
+    @objc public func onError(_ error: Error) {
+        self.call.resolve(["error": error])
+    }
+}
+
 @objc private class Channel: NSObject, NMSSHChannelDelegate {
     var call: CAPPluginCall
     var channel: NMSSHChannel
     init(call: CAPPluginCall, session: NMSSHSession) {
         self.channel = NMSSHChannel(session: session)
-        self.channel.requestPty = true
         self.call = call
     }
     func startShell(_ call: CAPPluginCall) {
@@ -164,6 +205,30 @@ private func generateKey(length: Int = 10) -> String {
         } catch {
             self.call.reject("Failed to start shell")
         }
+    }
+    func startCommand(_ call: CAPPluginCall) {
+        guard let cmd = self.call.getString("command") else {
+            return self.call.reject("Missing command to run")
+        }
+        let streamer = NMSSHChannelStream()
+        streamer.delegate = CommandStream(call: call)
+        self.channel.requestPty = false
+        do {
+            self.channel.executeStream(cmd, channelStream: streamer)
+        } catch {
+            self.call.reject("Failed to start command")
+        }
+    }
+    func execute(_ call: CAPPluginCall) {
+        var e: NSError?
+        guard let cmd = call.getString("command") else {
+            return call.reject("Missing command to run")
+        }
+        self.call = call
+        self.channel.requestPty = false
+        self.channel.delegate = self
+        self.call.keepAlive = true
+        self.channel.execute(cmd, error: &e)
     }
     func closeChannel() {
         self.channel.close()

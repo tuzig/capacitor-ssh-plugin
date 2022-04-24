@@ -10,6 +10,10 @@ export class SSHWeb extends WebPlugin implements SSHPlugin {
   newChannel(_: { session: SSHSessionID, pty?: TerminalType}): Promise<{ id: number }> {
       throw this.unimplemented('Not implemented on web.');
   }
+  streamCommand(_: { channel: SSHChannelID, command: string } , callback: ChannelCallback): Promise<number>
+      this.CB = callback
+      throw this.unimplemented('Not implemented on web.');
+  };
   startShell(_: { channel: SSHChannelID} , callback: ChannelCallback): Promise<string> {
       this.CB = callback
       throw this.unimplemented('Not implemented on web.');

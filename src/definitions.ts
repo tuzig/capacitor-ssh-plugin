@@ -35,8 +35,10 @@ export enum TerminalType {
 export interface SSHPlugin {
   startSessionByPasswd(options: SSHSessionByPass): Promise<SSHID>
   newChannel(options: { session: SSHSessionID, pty?: TerminalType}): Promise< { id: number } >
-  startShell(options: { channel: SSHChannelID } , callback: ChannelCallback): Promise<string>
-  writeToChannel(options: { channel: number, s: string }): Promise<void>
+  // TODO: change to Promise<number>
+  startShell(options: { channel: SSHChannelID }, callback: ChannelCallback): Promise<string>
+  startCommand(options: { session: SSHSessionID, command: string } , callback: ChannelCallback): Promise<string>
+  writeToChannel(options: { channel: number, message: string }): Promise<void>
   closeChannel(options: { channel: number }): Promise<void>
   setPtySize(options: { channel: number, width: number, height: number }): Promise<void>
   /*
