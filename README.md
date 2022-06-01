@@ -1,6 +1,7 @@
 # capacitor-ssh-plugin
 
-Supporting libssh2 sessions and channels
+Supporting libssh2 sessions and channels.
+iOS only for now :-(
 
 ## Install
 
@@ -31,14 +32,16 @@ npx cap sync
 ### startSessionByPasswd(...)
 
 ```typescript
-startSessionByPasswd(options: SSHSessionByPass) => Promise<SSHID>
+startSessionByPasswd(options: StartByPasswd) => Promise<SSHSessionID>
 ```
 
-| Param         | Type                                                          |
-| ------------- | ------------------------------------------------------------- |
-| **`options`** | <code><a href="#sshsessionbypass">SSHSessionByPass</a></code> |
+connect to a host using a username & password
 
-**Returns:** <code>Promise&lt;<a href="#sshid">SSHID</a>&gt;</code>
+| Param         | Type                                                    |
+| ------------- | ------------------------------------------------------- |
+| **`options`** | <code><a href="#startbypasswd">StartByPasswd</a></code> |
+
+**Returns:** <code>Promise&lt;string&gt;</code>
 
 --------------------
 
@@ -48,6 +51,9 @@ startSessionByPasswd(options: SSHSessionByPass) => Promise<SSHID>
 ```typescript
 newChannel(options: { session: SSHSessionID; pty?: TerminalType; }) => Promise<{ id: number; }>
 ```
+
+given a connected session and an optional terminal type,
+start a new channel
 
 | Param         | Type                                                                              |
 | ------------- | --------------------------------------------------------------------------------- |
@@ -61,13 +67,18 @@ newChannel(options: { session: SSHSessionID; pty?: TerminalType; }) => Promise<{
 ### startShell(...)
 
 ```typescript
-startShell(options: { channel: SSHChannelID; }, callback: ChannelCallback) => Promise<string>
+startShell(options: { channel: SSHChannelID; }, callback: STDOutCallback) => Promise<string>
 ```
 
-| Param          | Type                                                        |
-| -------------- | ----------------------------------------------------------- |
-| **`options`**  | <code>{ channel: number; }</code>                           |
-| **`callback`** | <code><a href="#channelcallback">ChannelCallback</a></code> |
+given a channel, start a login shell.
+
+The function also recieves a callback which is called when messages 
+arrive on the channel.
+
+| Param          | Type                                                      |
+| -------------- | --------------------------------------------------------- |
+| **`options`**  | <code>{ channel: number; }</code>                         |
+| **`callback`** | <code><a href="#stdoutcallback">STDOutCallback</a></code> |
 
 **Returns:** <code>Promise&lt;string&gt;</code>
 
@@ -79,6 +90,8 @@ startShell(options: { channel: SSHChannelID; }, callback: ChannelCallback) => Pr
 ```typescript
 writeToChannel(options: { channel: number; s: string; }) => Promise<void>
 ```
+
+writes a message to an open channel
 
 | Param         | Type                                         |
 | ------------- | -------------------------------------------- |
@@ -116,14 +129,9 @@ setPtySize(options: { channel: number; width: number; height: number; }) => Prom
 ### Interfaces
 
 
-#### SSHID
+#### StartByPasswd
 
-| Prop     | Type                |
-| -------- | ------------------- |
-| **`id`** | <code>string</code> |
-
-
-#### SSHSessionByPass
+parameters used when opening a session by password
 
 | Prop           | Type                |
 | -------------- | ------------------- |
@@ -138,15 +146,19 @@ setPtySize(options: { channel: number; width: number; height: number; }) => Prom
 
 #### SSHSessionID
 
+Session ID
+
 <code>string</code>
 
 
 #### SSHChannelID
 
+Channel ID
+
 <code>number</code>
 
 
-#### ChannelCallback
+#### STDOutCallback
 
 <code>(message: string | null, err?: any): void</code>
 
