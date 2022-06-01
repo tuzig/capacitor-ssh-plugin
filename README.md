@@ -17,7 +17,7 @@ npx cap sync
 * [`newChannel(...)`](#newchannel)
 * [`startShell(...)`](#startshell)
 * [`writeToChannel(...)`](#writetochannel)
-* [`closeShell(...)`](#closeshell)
+* [`closeChannel(...)`](#closechannel)
 * [`setPtySize(...)`](#setptysize)
 * [Interfaces](#interfaces)
 * [Type Aliases](#type-aliases)
@@ -46,12 +46,12 @@ startSessionByPasswd(options: SSHSessionByPass) => Promise<SSHID>
 ### newChannel(...)
 
 ```typescript
-newChannel(options: { pty?: TerminalType; session: SSHSessionID; }) => Promise<{ id: number; }>
+newChannel(options: { session: SSHSessionID; pty?: TerminalType; }) => Promise<{ id: number; }>
 ```
 
 | Param         | Type                                                                              |
 | ------------- | --------------------------------------------------------------------------------- |
-| **`options`** | <code>{ pty?: <a href="#terminaltype">TerminalType</a>; session: string; }</code> |
+| **`options`** | <code>{ session: string; pty?: <a href="#terminaltype">TerminalType</a>; }</code> |
 
 **Returns:** <code>Promise&lt;{ id: number; }&gt;</code>
 
@@ -77,22 +77,20 @@ startShell(options: { channel: SSHChannelID; }, callback: ChannelCallback) => Pr
 ### writeToChannel(...)
 
 ```typescript
-writeToChannel(options: { channel: number; s: string; }) => Promise<{ error: string; }>
+writeToChannel(options: { channel: number; s: string; }) => Promise<void>
 ```
 
 | Param         | Type                                         |
 | ------------- | -------------------------------------------- |
 | **`options`** | <code>{ channel: number; s: string; }</code> |
 
-**Returns:** <code>Promise&lt;{ error: string; }&gt;</code>
-
 --------------------
 
 
-### closeShell(...)
+### closeChannel(...)
 
 ```typescript
-closeShell(options: { channel: number; }) => Promise<void>
+closeChannel(options: { channel: number; }) => Promise<void>
 ```
 
 | Param         | Type                              |
