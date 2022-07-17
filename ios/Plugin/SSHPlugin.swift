@@ -136,9 +136,10 @@ private func generateKey(length: Int = 10) -> String {
         }
     }
     @objc public func session(_ session: NMSSHSession, didDisconnectWithError error: Error) {
+        print("SSH Session disconnect with error", error)
         if let call = self.call {
-            print("SSH Session disconnect with error", error)
             call.reject(error.localizedDescription)
+            call.keepAlive = false
         }
     }
     @objc public func session(_ session: NMSSHSession, shouldConnectToHostWithFingerprint msg: String) -> Bool {
@@ -165,6 +166,7 @@ private func generateKey(length: Int = 10) -> String {
             self.call.reject("Failed to start shell")
         }
     }
+    // TODO: rename to `close`
     func closeChannel() {
         self.channel.close()
         self.call.keepAlive = false
@@ -184,10 +186,11 @@ private func generateKey(length: Int = 10) -> String {
         self.call.resolve(["data": String(decoding: message, as: UTF8.self)])
     }
     @objc public func channel(_ channel: NMSSHChannel, didReadError error: String) {
-        self.call.resolve(["ERROR": error])
+        self.call.resolve(["error": error])
+        self.call.keepAlive = false
     }
     @objc public func channelShellDidClose(_ channel: NMSSHChannel) {
-        self.call.resolve(["EOF": true])
-        // self.call.reject("Shell Did Close")
+        self.call.resolve(["error": "EOF"])
+        self.call.keepAlive = false
     }
 }
