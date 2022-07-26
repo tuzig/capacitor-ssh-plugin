@@ -1,11 +1,16 @@
 import Capacitor
 import Foundation
-import NMSSH_riden
+import NMSSHT7
+import os
+
+@available(iOS 14.0, *)
+let logger = Logger(subsystem: Bundle.main.bundleIdentifier!, category: "network")
 
 private func generateKey(length: Int = 10) -> String {
   let letters = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
   return String((0..<length).map{ _ in letters.randomElement()! })
 }
+
 @objc(SSHPlugin) public class SSHPlugin: CAPPlugin {
     private var sessions: [String: Session] = [:]
     private var channels: [Int: Channel] = [:]
@@ -168,7 +173,7 @@ private func generateKey(length: Int = 10) -> String {
     }
     // TODO: rename to `close`
     func closeChannel() {
-        self.channel.close()
+        self.channel.closeShell()
         self.call.keepAlive = false
     }
     func write(message: String) {
