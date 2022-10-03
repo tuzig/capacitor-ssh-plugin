@@ -7,7 +7,7 @@ def capacitor_pods
   use_frameworks!
   pod 'Capacitor', :path => '../node_modules/@capacitor/ios'
   pod 'CapacitorCordova', :path => '../node_modules/@capacitor/ios'
-  pod 'NMSSHT7', '~> 2.8'
+  pod 'NMSSHT7', '~> 2.9'
 end
 
 target 'Plugin' do

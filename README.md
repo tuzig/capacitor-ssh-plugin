@@ -67,7 +67,7 @@ start a new channel
 ### startShell(...)
 
 ```typescript
-startShell(options: { channel: SSHChannelID; }, callback: STDOutCallback) => Promise<string>
+startShell(options: { channel: SSHChannelID; command?: string; }, callback: STDOutCallback) => Promise<string>
 ```
 
 given a channel, start a login shell.
@@ -77,7 +77,7 @@ arrive on the channel.
 
 | Param          | Type                                                      |
 | -------------- | --------------------------------------------------------- |
-| **`options`**  | <code>{ channel: number; }</code>                         |
+| **`options`**  | <code>{ channel: number; command?: string; }</code>       |
 | **`callback`** | <code><a href="#stdoutcallback">STDOutCallback</a></code> |
 
 **Returns:** <code>Promise&lt;string&gt;</code>

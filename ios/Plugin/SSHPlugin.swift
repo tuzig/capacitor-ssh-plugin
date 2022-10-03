@@ -165,11 +165,15 @@ private func generateKey(length: Int = 10) -> String {
         self.channel.ptyTerminalType = NMSSHChannelPtyTerminal.xterm
         self.channel.delegate = self
         self.call.keepAlive = true
-        do {
-            try self.channel.startShell()
-        } catch {
-            self.call.reject("Failed to start shell")
+        guard let command = call.getString("command") else {
+            do {
+                try self.channel.startShell()
+            } catch { self.call.reject("Failed to start shell") }
+            return
         }
+        do {
+            try self.channel.startCommand(nil, command: command)
+        } catch { self.call.reject("Failed to start command") }
     }
     // TODO: rename to `close`
     func closeChannel() {

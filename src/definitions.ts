@@ -61,7 +61,7 @@ export interface SSHPlugin {
      * The function also recieves a callback which is called when messages 
      * arrive on the channel.
      */
-    startShell(options: { channel: SSHChannelID } , callback: STDOutCallback): Promise<string>
+    startShell(options: { channel: SSHChannelID, command?: string } , callback: STDOutCallback): Promise<string>
     /**
      * writes a message to an open channel
      */
@@ -74,13 +74,4 @@ export interface SSHPlugin {
      * change the pseudo tty size
      */
     setPtySize(options: { channel: number, width: number, height: number }): Promise<void>
-  /* Some ideas for the future:
-
-  startSessionByKeys(options: KeyRing): Promise<{ session: string}>;
-  isConnected(options: { session: string } ): Promise< { connected: boolean} >;
-  execCommand(options: CommandExecution, callback: STDOutCallback): Promise<{ channel: string} >;
-  startShell(options: { pty: TerminalType} , callback: STDOutCallback): Promise< {channel:string }>;
-  writeToChannel(options: { channel: string, s: string }): Promise< { error: string} >;
-  rsaKeyGen(options: { password: string}): Promise< { publicKey: string, privateKey: string } >;
-  */
 }
