@@ -2,6 +2,7 @@ import Capacitor
 import Foundation
 import NMSSHT7
 import os
+import Security
 
 @available(iOS 14.0, *)
 let logger = Logger(subsystem: Bundle.main.bundleIdentifier!, category: "network")
@@ -15,6 +16,9 @@ private func generateKey(length: Int = 10) -> String {
     private var sessions: [String: Session] = [:]
     private var channels: [Int: Channel] = [:]
     private var lastChannleID: Int = 0
+    private var publicKey : SecKey?
+    private var privateKey : SecKey?
+
     @objc func startSessionByPasswd(_ call: CAPPluginCall) {
         guard let host = call.getString("address") else {
             return call.reject("Must provide an address") }
@@ -103,7 +107,50 @@ private func generateKey(length: Int = 10) -> String {
         channel.resize(width: UInt(width), height: UInt(height))
         call.resolve()
     }
+    @objc func generateKeys(_ call: CAPPluginCall) {
 
+        let publicKeyAttr: [NSObject: NSObject] = [
+                    kSecAttrIsPermanent:true as NSObject,
+                    kSecAttrApplicationTag:"dev.terminal7.ssh-plugin".data(using: String.Encoding.utf8)! as NSObject,
+                    kSecClass: kSecClassKey,
+                    kSecReturnData: kCFBooleanTrue]
+        let privateKeyAttr: [NSObject: NSObject] = [
+                    kSecAttrIsPermanent:true as NSObject,
+                    kSecAttrApplicationTag:"dev.terminal7.ssh-plugin".data(using: String.Encoding.utf8)! as NSObject,
+                    kSecClass: kSecClassKey,
+                    kSecReturnData: kCFBooleanTrue]
+
+        var keyPairAttr = [NSObject: NSObject]()
+        keyPairAttr[kSecAttrKeyType] = kSecAttrKeyTypeRSA
+        keyPairAttr[kSecAttrKeySizeInBits] = 2048 as NSObject
+        keyPairAttr[kSecPublicKeyAttrs] = publicKeyAttr as NSObject
+        keyPairAttr[kSecPrivateKeyAttrs] = privateKeyAttr as NSObject
+
+        let statusCode = SecKeyGeneratePair(keyPairAttr as CFDictionary, &self.publicKey, &self.privateKey)
+
+        if statusCode == noErr  {
+            var resultPublicKey: AnyObject?
+            var resultPrivateKey: AnyObject?
+            let statusPublicKey = SecItemCopyMatching(publicKeyAttr as CFDictionary, &resultPublicKey)
+            let statusPrivateKey = SecItemCopyMatching(privateKeyAttr as CFDictionary, &resultPrivateKey)
+
+            if statusPublicKey == noErr {
+                if let publicKey = resultPublicKey as? Data {
+                    print("Public Key: \((publicKey.base64EncodedString()))")
+                }
+            }
+
+            if statusPrivateKey == noErr {
+                if let privateKey = resultPrivateKey as? Data {
+                    print("Private Key: \((privateKey.base64EncodedString()))")
+                }
+            }
+        } else {
+            call.reject("Failed to generate keys")
+        }
+        call.resolve()
+    }
+    
 }
 @objc private class Session: NSObject, NMSSHSessionDelegate {
     var call: CAPPluginCall?
