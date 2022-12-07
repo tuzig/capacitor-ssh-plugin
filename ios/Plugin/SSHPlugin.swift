@@ -11,6 +11,48 @@ private func generateKey(length: Int = 10) -> String {
   let letters = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
   return String((0..<length).map{ _ in letters.randomElement()! })
 }
+/*
+private func generate_rsa_key(int modulus_size, BIGNUM* exponent) -> *RSA {
+    let RSA* key = RSA_new()
+    if (key != nil)
+    {
+        if (!RSA_generate_key_ex(key, modulus_size, exponent, 0))
+        {
+            RSA_free(key)
+            return nil
+        }
+    }
+    return key
+}
+*/
+
+func generateSSHKeyPair(passphrase: String, publicKey: UnsafeMutablePointer<Int8>, privateKey: UnsafeMutablePointer<Int8>) {
+    // Use OpenSSL to generate the RSA key pair
+    let rsa = RSA_new()
+    let bn = BN_new()
+    BN_set_word(bn, RSA_F4)
+    RSA_generate_key_ex(rsa, 2048, bn, nil)
+
+    // Set the passphrase for the private key
+    /*
+    EVP_PKEY_CTX_set_rsa_passphrase_cb(rsa, { (buf, size, rwflag, userdata) -> Int32 in
+        let passphrase = userdata!.assumingMemoryBound(to: Int8.self)
+        let length = strlen(passphrase)
+        guard length <= size else { return 0 }
+        memcpy(buf, passphrase, length)
+        return Int32(length)
+    }, passphrase)
+    */
+
+    // Write the public and private keys to the provided buffers
+    PEM_write_RSA_PUBKEY(publicKey, rsa)
+    PEM_write_RSAPrivateKey(privateKey, rsa, nil, nil, 0, nil, nil)
+
+    // Clean up
+    RSA_free(rsa)
+    BN_free(bn)
+}
+
 
 @objc(SSHPlugin) public class SSHPlugin: CAPPlugin {
     private var sessions: [String: Session] = [:]
@@ -153,38 +195,35 @@ private func generateKey(length: Int = 10) -> String {
         let port = call.options["port"] as? Int ?? 22
         guard let user = call.getString("username") else {
             return call.reject("Must provide a username") }
-        guard let tag = call.getString("tag") else {
-            return call.reject("Must provide a tag") }
-        let getquery: [String: Any] = [kSecClass as String: kSecClassKey,
-                                       kSecAttrApplicationTag as String: tag.data(using: .utf8)!,
-                                       kSecReturnRef as String: true]
-		var privateKey: SecKey
-		var item: CFTypeRef?
-		let status = SecItemCopyMatching(getquery as CFDictionary, &item)
-		if status == errSecSuccess { 
-		    privateKey = item as! SecKey
-        } else {
+        guard let publicKey = call.getString("publicKey") else {
+            return call.reject("Must provide a publicKey") }
+        guard let privateKey = call.getString("privateKey") else {
+            return call.reject("Must provide a privateKey") }
+    
+		if publicKey == "TBD" {
             // no key. generate it and return
-			let attributes: [String: Any] =
-				[kSecAttrKeyType as String:            kSecAttrKeyTypeRSA,
-                 kSecAttrKeySizeInBits as String:      2048,
-				 kSecPrivateKeyAttrs as String:
-					 [kSecAttrIsPermanent as String:    true,
-                      kSecClass: kSecClassKey,
-					  kSecAttrApplicationTag as String: tag.data(using: .utf8)!]
-				]
-			var error: Unmanaged<CFError>?
-			guard let key = SecKeyCreateRandomKey(attributes as CFDictionary, &error) else {
-				// throw error!.takeRetainedValue() as Error
-				call.reject("Failed to generate Key")
-                return
-			}
-            call.reject("New key generated")
+            // let passphrase = generateKey(20)
+            let passphrase = ""
+            let publicKeyBuffer = UnsafeMutablePointer<Int8>.allocate(capacity: 2048)
+            let privateKeyBuffer = UnsafeMutablePointer<Int8>.allocate(capacity: 2048)
+            generateSSHKeyPair(passphrase: passphrase, publicKey: publicKeyBuffer, privateKey: privateKeyBuffer)
+            call.resolve(["publicKey": publicKeyBuffer, "privateKey": privateKeyBuffer])
+
+
+            // Use the keys with libssh2_userauth_publickey_frommemory
+            /*
+            let publicKey = String(cString: publicKeyBuffer)
+            let privateKey = String(cString: privateKeyBuffer)
+            libssh2_userauth_publickey_frommemory(...)
+            */
+			// TODO: store key
             return
 		} 
-        let publicKey = SecKeyCopyPublicKey(privateKey)
         let session = Session(host: host, port: port, username: user)
-        if session.connect(call: call, privateKey: privateKey) {
+        if session.connect(call: call,
+                           publicKey: publicKey,
+                           privateKey: privateKey,
+                           passphrase: "") {
             let key = generateKey()
             self.sessions[key] = session
             call.resolve(["session": key])
@@ -220,29 +259,16 @@ private func generateKey(length: Int = 10) -> String {
         }
         return true
     }
-    func connect(call: CAPPluginCall, privateKey: SecKey) -> Bool {
+    func connect(call: CAPPluginCall, publicKey: String, privateKey: String,
+                 passphrase: String) -> Bool {
         self.call = call
         let session = self.session
         session.delegate = self
         session.connect()
         if session.isConnected {
-            guard let privateKeyEx = SecKeyCopyExternalRepresentation(privateKey, nil),
-                  let privateData = privateKeyEx as? Data else {
-                call.reject("Failed to convert private key")
-                return false
-            }
-            guard let publicKey = SecKeyCopyPublicKey(privateKey),
-                  let publicKeyEx = SecKeyCopyExternalRepresentation(publicKey, nil) else { //2
-                call.reject("Failed to get public key")
-                return false
-            }
-            guard let publicData = publicKeyEx as? Data else {
-                call.reject("Failed to get public key")
-                return false
-            }
-            session.authenticateBy(inMemoryPublicKey: publicData.base64EncodedString(),
-                                 privateKey: privateData.base64EncodedString(),
-                                 andPassword: nil)
+            session.authenticateBy(inMemoryPublicKey: publickKey,
+                                 privateKey: privateKey,
+                                 andPassword: passphrase)
             if session.isAuthorized {
                 call.keepAlive = true
             } else {

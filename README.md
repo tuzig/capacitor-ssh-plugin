@@ -15,11 +15,14 @@ npx cap sync
 <docgen-index>
 
 * [`startSessionByPasswd(...)`](#startsessionbypasswd)
+* [`startSessionByKey(...)`](#startsessionbykey)
 * [`newChannel(...)`](#newchannel)
 * [`startShell(...)`](#startshell)
 * [`writeToChannel(...)`](#writetochannel)
 * [`closeChannel(...)`](#closechannel)
 * [`setPtySize(...)`](#setptysize)
+* [`getPublicKey(...)`](#getpublickey)
+* [`deleteKey(...)`](#deletekey)
 * [Interfaces](#interfaces)
 * [Type Aliases](#type-aliases)
 * [Enums](#enums)
@@ -40,6 +43,23 @@ connect to a host using a username & password
 | Param         | Type                                                    |
 | ------------- | ------------------------------------------------------- |
 | **`options`** | <code><a href="#startbypasswd">StartByPasswd</a></code> |
+
+**Returns:** <code>Promise&lt;string&gt;</code>
+
+--------------------
+
+
+### startSessionByKey(...)
+
+```typescript
+startSessionByKey(options: StartByKey) => Promise<SSHSessionID>
+```
+
+connect to a host using an identity key. The pa
+
+| Param         | Type                                              |
+| ------------- | ------------------------------------------------- |
+| **`options`** | <code><a href="#startbykey">StartByKey</a></code> |
 
 **Returns:** <code>Promise&lt;string&gt;</code>
 
@@ -126,6 +146,34 @@ setPtySize(options: { channel: number; width: number; height: number; }) => Prom
 --------------------
 
 
+### getPublicKey(...)
+
+```typescript
+getPublicKey(options: { tag: string; }) => Promise<{ publickey: string; }>
+```
+
+| Param         | Type                          |
+| ------------- | ----------------------------- |
+| **`options`** | <code>{ tag: string; }</code> |
+
+**Returns:** <code>Promise&lt;{ publickey: string; }&gt;</code>
+
+--------------------
+
+
+### deleteKey(...)
+
+```typescript
+deleteKey(options: { tag: string; }) => Promise<void>
+```
+
+| Param         | Type                          |
+| ------------- | ----------------------------- |
+| **`options`** | <code>{ tag: string; }</code> |
+
+--------------------
+
+
 ### Interfaces
 
 
@@ -139,6 +187,18 @@ parameters used when opening a session by password
 | **`port`**     | <code>number</code> |
 | **`username`** | <code>string</code> |
 | **`password`** | <code>string</code> |
+
+
+#### StartByKey
+
+parameters used when opening a session by indetity key
+
+| Prop           | Type                |
+| -------------- | ------------------- |
+| **`address`**  | <code>string</code> |
+| **`port`**     | <code>number</code> |
+| **`username`** | <code>string</code> |
+| **`tag`**      | <code>string</code> |
 
 
 ### Type Aliases
