@@ -107,48 +107,88 @@ private func generateKey(length: Int = 10) -> String {
         channel.resize(width: UInt(width), height: UInt(height))
         call.resolve()
     }
-    @objc func generateKeys(_ call: CAPPluginCall) {
-
-        let publicKeyAttr: [NSObject: NSObject] = [
-                    kSecAttrIsPermanent:true as NSObject,
-                    kSecAttrApplicationTag:"dev.terminal7.ssh-plugin".data(using: String.Encoding.utf8)! as NSObject,
-                    kSecClass: kSecClassKey,
-                    kSecReturnData: kCFBooleanTrue]
-        let privateKeyAttr: [NSObject: NSObject] = [
-                    kSecAttrIsPermanent:true as NSObject,
-                    kSecAttrApplicationTag:"dev.terminal7.ssh-plugin".data(using: String.Encoding.utf8)! as NSObject,
-                    kSecClass: kSecClassKey,
-                    kSecReturnData: kCFBooleanTrue]
-
-        var keyPairAttr = [NSObject: NSObject]()
-        keyPairAttr[kSecAttrKeyType] = kSecAttrKeyTypeRSA
-        keyPairAttr[kSecAttrKeySizeInBits] = 2048 as NSObject
-        keyPairAttr[kSecPublicKeyAttrs] = publicKeyAttr as NSObject
-        keyPairAttr[kSecPrivateKeyAttrs] = privateKeyAttr as NSObject
-
-        let statusCode = SecKeyGeneratePair(keyPairAttr as CFDictionary, &self.publicKey, &self.privateKey)
-
-        if statusCode == noErr  {
-            var resultPublicKey: AnyObject?
-            var resultPrivateKey: AnyObject?
-            let statusPublicKey = SecItemCopyMatching(publicKeyAttr as CFDictionary, &resultPublicKey)
-            let statusPrivateKey = SecItemCopyMatching(privateKeyAttr as CFDictionary, &resultPrivateKey)
-
-            if statusPublicKey == noErr {
-                if let publicKey = resultPublicKey as? Data {
-                    print("Public Key: \((publicKey.base64EncodedString()))")
-                }
-            }
-
-            if statusPrivateKey == noErr {
-                if let privateKey = resultPrivateKey as? Data {
-                    print("Private Key: \((privateKey.base64EncodedString()))")
-                }
-            }
-        } else {
-            call.reject("Failed to generate keys")
+    @objc func deleteKey(_ call: CAPPluginCall) {
+        guard let tag = call.getString("tag") else {
+            return call.reject("Must provide a tag")
         }
+        let query: [String: Any] = [kSecClass as String: kSecClassKey,
+           kSecAttrApplicationTag as String: tag.data(using: .utf8)!,
+           kSecReturnRef as String: true]
+        let status = SecItemDelete(query as CFDictionary)
         call.resolve()
+    }
+    @objc func getPublicKey(_ call: CAPPluginCall) {
+        guard let tag = call.getString("tag") else {
+            return call.reject("Must provide a tag")
+        }
+        let getquery: [String: Any] = [kSecClass as String: kSecClassKey,
+           kSecAttrApplicationTag as String: tag.data(using: .utf8)!,
+           kSecReturnRef as String: true]
+		var item: CFTypeRef?
+		let status = SecItemCopyMatching(getquery as CFDictionary, &item)
+		guard status == errSecSuccess else {
+            call.reject("Failed to get private key")
+            return
+        }
+        let privateKey = item as! SecKey
+        guard let publicKey = SecKeyCopyPublicKey(privateKey) else {
+            call.reject("Failed to copy public key")
+            return
+        }
+
+        var error: Unmanaged<CFError>?
+        let exportedKey = SecKeyCopyExternalRepresentation(publicKey, &error)
+        var keyData = Data()
+        // keyData.append(Data(sshRsaHeader))
+        let data = exportedKey as Data?
+
+        keyData.append(data!)
+        let publicKeyString = keyData.base64EncodedString()
+
+        call.resolve(["publickey": "\(publicKeyString)"])
+    }
+    @objc func startSessionByKey(_ call: CAPPluginCall) {
+        guard let host = call.getString("address") else {
+            return call.reject("Must provide an address") }
+        let port = call.options["port"] as? Int ?? 22
+        guard let user = call.getString("username") else {
+            return call.reject("Must provide a username") }
+        guard let tag = call.getString("tag") else {
+            return call.reject("Must provide a tag") }
+        let getquery: [String: Any] = [kSecClass as String: kSecClassKey,
+                                       kSecAttrApplicationTag as String: tag.data(using: .utf8)!,
+                                       kSecReturnRef as String: true]
+		var privateKey: SecKey
+		var item: CFTypeRef?
+		let status = SecItemCopyMatching(getquery as CFDictionary, &item)
+		if status == errSecSuccess { 
+		    privateKey = item as! SecKey
+        } else {
+            // no key. generate it and return
+			let attributes: [String: Any] =
+				[kSecAttrKeyType as String:            kSecAttrKeyTypeRSA,
+                 kSecAttrKeySizeInBits as String:      2048,
+				 kSecPrivateKeyAttrs as String:
+					 [kSecAttrIsPermanent as String:    true,
+                      kSecClass: kSecClassKey,
+					  kSecAttrApplicationTag as String: tag.data(using: .utf8)!]
+				]
+			var error: Unmanaged<CFError>?
+			guard let key = SecKeyCreateRandomKey(attributes as CFDictionary, &error) else {
+				// throw error!.takeRetainedValue() as Error
+				call.reject("Failed to generate Key")
+                return
+			}
+            call.reject("New key generated")
+            return
+		} 
+        let publicKey = SecKeyCopyPublicKey(privateKey)
+        let session = Session(host: host, port: port, username: user)
+        if session.connect(call: call, privateKey: privateKey) {
+            let key = generateKey()
+            self.sessions[key] = session
+            call.resolve(["session": key])
+        } // no need for an else as the call was already rejected
     }
     
 }
@@ -172,6 +212,41 @@ private func generateKey(length: Int = 10) -> String {
                 call.keepAlive = true
             } else {
                 call.reject("Wrong password")
+                return false
+            }
+        } else {
+            call.reject("Failed to connect")
+            return false
+        }
+        return true
+    }
+    func connect(call: CAPPluginCall, privateKey: SecKey) -> Bool {
+        self.call = call
+        let session = self.session
+        session.delegate = self
+        session.connect()
+        if session.isConnected {
+            guard let privateKeyEx = SecKeyCopyExternalRepresentation(privateKey, nil),
+                  let privateData = privateKeyEx as? Data else {
+                call.reject("Failed to convert private key")
+                return false
+            }
+            guard let publicKey = SecKeyCopyPublicKey(privateKey),
+                  let publicKeyEx = SecKeyCopyExternalRepresentation(publicKey, nil) else { //2
+                call.reject("Failed to get public key")
+                return false
+            }
+            guard let publicData = publicKeyEx as? Data else {
+                call.reject("Failed to get public key")
+                return false
+            }
+            session.authenticateBy(inMemoryPublicKey: publicData.base64EncodedString(),
+                                 privateKey: privateData.base64EncodedString(),
+                                 andPassword: nil)
+            if session.isAuthorized {
+                call.keepAlive = true
+            } else {
+                call.reject("UNAUTHORIZED")
                 return false
             }
         } else {

@@ -31,6 +31,15 @@ export interface StartByPasswd {
     password: string;
 }
 /**
+ * parameters used when opening a session by indetity key
+ */
+export interface StartByKey {
+    address: string;
+    port: number;
+    username: string;
+    tag: string;
+}
+/**
  * terminal type. this was copied from libssh and  can not be changed
  */
 export enum TerminalType {
@@ -50,6 +59,10 @@ export interface SSHPlugin {
      * connect to a host using a username & password
      */
     startSessionByPasswd(options: StartByPasswd): Promise<SSHSessionID>
+    /**
+     * connect to a host using an identity key. The pa
+     */
+    startSessionByKey(options: StartByKey): Promise<SSHSessionID>
     /**
      * given a connected session and an optional terminal type,
      * start a new channel
@@ -74,4 +87,6 @@ export interface SSHPlugin {
      * change the pseudo tty size
      */
     setPtySize(options: { channel: number, width: number, height: number }): Promise<void>
+    getPublicKey(options: {tag: string}): Promise<{ publickey: string }>
+    deleteKey(options: {tag: string}): Promise<void>
 }

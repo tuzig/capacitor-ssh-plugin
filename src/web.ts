@@ -1,10 +1,15 @@
 import { WebPlugin } from '@capacitor/core';
 
-import type { SSHPlugin, TerminalType, StartByPasswd, SSHChannelID, STDOutCallback, SSHSessionID } from './definitions';
+import type { SSHPlugin, TerminalType, StartByPasswd, StartByKey,
+    SSHChannelID, STDOutCallback, SSHSessionID } from './definitions';
 
 export class SSHWeb extends WebPlugin implements SSHPlugin {
   CB: STDOutCallback | undefined
   startSessionByPasswd = async (_: StartByPasswd): Promise<SSHSessionID> => {
+      throw this.unimplemented('Not implemented on web');
+  }
+
+  startSessionByKey = async (_: StartByKey): Promise<SSHSessionID> => {
       throw this.unimplemented('Not implemented on web');
   }
   newChannel(_: { session: SSHSessionID, pty?: TerminalType}): Promise<{ id: number }> {
@@ -23,6 +28,12 @@ export class SSHWeb extends WebPlugin implements SSHPlugin {
   setPtySize(_: { channel: number, width: number, height: number }): Promise<void> {
       throw this.unimplemented('Not implemented on web');
   };
+  getPublicKey(_: {tag: string}): Promise<{ publickey: string }> {
+      throw this.unimplemented('Not implemented on web');
+  }
+  deleteKey(_: {tag: string}): Promise<void> {
+      throw this.unimplemented('Not implemented on web');
+  }
   /*
   startSessionByKeys(options: SessionByKeys): Promise<{ session: string}>;
   isHostKnown(options: { session: string } ): Promise< KnownHostStatus >;
