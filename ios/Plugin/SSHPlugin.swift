@@ -2,7 +2,6 @@ import Capacitor
 import Foundation
 import NMSSHT7
 import os
-import Security
 
 @available(iOS 14.0, *)
 let logger = Logger(subsystem: Bundle.main.bundleIdentifier!, category: "network")
@@ -26,31 +25,15 @@ private func generate_rsa_key(int modulus_size, BIGNUM* exponent) -> *RSA {
 }
 */
 
-func generateSSHKeyPair(passphrase: String, publicKey: UnsafeMutablePointer<Int8>, privateKey: UnsafeMutablePointer<Int8>) {
+func generateSSHKeyPair(passphrase: String, publicKey: UnsafeMutablePointer<CChar>, privateKey: UnsafeMutablePointer<CChar>) {
     // Use OpenSSL to generate the RSA key pair
-    let rsa = RSA_new()
-    let bn = BN_new()
-    BN_set_word(bn, RSA_F4)
-    RSA_generate_key_ex(rsa, 2048, bn, nil)
-
-    // Set the passphrase for the private key
-    /*
-    EVP_PKEY_CTX_set_rsa_passphrase_cb(rsa, { (buf, size, rwflag, userdata) -> Int32 in
-        let passphrase = userdata!.assumingMemoryBound(to: Int8.self)
-        let length = strlen(passphrase)
-        guard length <= size else { return 0 }
-        memcpy(buf, passphrase, length)
-        return Int32(length)
-    }, passphrase)
-    */
-
-    // Write the public and private keys to the provided buffers
-    PEM_write_RSA_PUBKEY(publicKey, rsa)
-    PEM_write_RSAPrivateKey(privateKey, rsa, nil, nil, 0, nil, nil)
-
-    // Clean up
-    RSA_free(rsa)
-    BN_free(bn)
+    // Define the buffer as an array of characters with a maximum length of 256
+    // MySSL.keyGenWithPassPhrase("", publicKey, privateKey);
+    passphrase.withCString { (ptr) in
+        let result = MySSL.keyGenPublicKey(publicKey,
+                                           privateKey: privateKey,
+                                           passphrase: nil)
+    }
 }
 
 
@@ -58,8 +41,6 @@ func generateSSHKeyPair(passphrase: String, publicKey: UnsafeMutablePointer<Int8
     private var sessions: [String: Session] = [:]
     private var channels: [Int: Channel] = [:]
     private var lastChannleID: Int = 0
-    private var publicKey : SecKey?
-    private var privateKey : SecKey?
 
     @objc func startSessionByPasswd(_ call: CAPPluginCall) {
         guard let host = call.getString("address") else {
@@ -149,46 +130,6 @@ func generateSSHKeyPair(passphrase: String, publicKey: UnsafeMutablePointer<Int8
         channel.resize(width: UInt(width), height: UInt(height))
         call.resolve()
     }
-    @objc func deleteKey(_ call: CAPPluginCall) {
-        guard let tag = call.getString("tag") else {
-            return call.reject("Must provide a tag")
-        }
-        let query: [String: Any] = [kSecClass as String: kSecClassKey,
-           kSecAttrApplicationTag as String: tag.data(using: .utf8)!,
-           kSecReturnRef as String: true]
-        let status = SecItemDelete(query as CFDictionary)
-        call.resolve()
-    }
-    @objc func getPublicKey(_ call: CAPPluginCall) {
-        guard let tag = call.getString("tag") else {
-            return call.reject("Must provide a tag")
-        }
-        let getquery: [String: Any] = [kSecClass as String: kSecClassKey,
-           kSecAttrApplicationTag as String: tag.data(using: .utf8)!,
-           kSecReturnRef as String: true]
-		var item: CFTypeRef?
-		let status = SecItemCopyMatching(getquery as CFDictionary, &item)
-		guard status == errSecSuccess else {
-            call.reject("Failed to get private key")
-            return
-        }
-        let privateKey = item as! SecKey
-        guard let publicKey = SecKeyCopyPublicKey(privateKey) else {
-            call.reject("Failed to copy public key")
-            return
-        }
-
-        var error: Unmanaged<CFError>?
-        let exportedKey = SecKeyCopyExternalRepresentation(publicKey, &error)
-        var keyData = Data()
-        // keyData.append(Data(sshRsaHeader))
-        let data = exportedKey as Data?
-
-        keyData.append(data!)
-        let publicKeyString = keyData.base64EncodedString()
-
-        call.resolve(["publickey": "\(publicKeyString)"])
-    }
     @objc func startSessionByKey(_ call: CAPPluginCall) {
         guard let host = call.getString("address") else {
             return call.reject("Must provide an address") }
@@ -204,10 +145,10 @@ func generateSSHKeyPair(passphrase: String, publicKey: UnsafeMutablePointer<Int8
             // no key. generate it and return
             // let passphrase = generateKey(20)
             let passphrase = ""
-            let publicKeyBuffer = UnsafeMutablePointer<Int8>.allocate(capacity: 2048)
-            let privateKeyBuffer = UnsafeMutablePointer<Int8>.allocate(capacity: 2048)
+            let publicKeyBuffer = UnsafeMutablePointer<CChar>.allocate(capacity: 2048)
+            let privateKeyBuffer = UnsafeMutablePointer<CChar>.allocate(capacity: 4096)
             generateSSHKeyPair(passphrase: passphrase, publicKey: publicKeyBuffer, privateKey: privateKeyBuffer)
-            call.resolve(["publicKey": publicKeyBuffer, "privateKey": privateKeyBuffer])
+            call.resolve(["publicKey": String(cString: publicKeyBuffer), "privateKey": String(cString: privateKeyBuffer)])
 
 
             // Use the keys with libssh2_userauth_publickey_frommemory
@@ -266,7 +207,7 @@ func generateSSHKeyPair(passphrase: String, publicKey: UnsafeMutablePointer<Int8
         session.delegate = self
         session.connect()
         if session.isConnected {
-            session.authenticateBy(inMemoryPublicKey: publickKey,
+            session.authenticateBy(inMemoryPublicKey: publicKey,
                                  privateKey: privateKey,
                                  andPassword: passphrase)
             if session.isAuthorized {

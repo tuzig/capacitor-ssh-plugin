@@ -62,7 +62,7 @@ export interface SSHPlugin {
     /**
      * connect to a host using an identity key. The pa
      */
-    startSessionByKey(options: StartByKey): Promise<SSHSessionID>
+    startSessionByKey(options: StartByKey): Promise<{session?: number, privateKey?: string, publicKey?: string}>
     /**
      * given a connected session and an optional terminal type,
      * start a new channel

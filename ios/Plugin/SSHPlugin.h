@@ -1,11 +1,6 @@
 #import <UIKit/UIKit.h>
+#import "MySSL.h"
 
-#include "openssl-iosx/openssl/crypto.h"
-#include <openssl/ec.h>
-#include <openssl/engine.h>
-#include <openssl/evp.h>
-#include <openssl/objects.h>
-#include <openssl/rand.h>
 //! Project version number for Plugin.
 FOUNDATION_EXPORT double PluginVersionNumber;
 
