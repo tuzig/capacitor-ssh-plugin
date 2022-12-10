@@ -1,5 +1,4 @@
 #import <UIKit/UIKit.h>
-#import "MySSL.h"
 
 //! Project version number for Plugin.
 FOUNDATION_EXPORT double PluginVersionNumber;

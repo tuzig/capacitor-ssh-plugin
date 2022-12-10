@@ -10,32 +10,6 @@ private func generateKey(length: Int = 10) -> String {
   let letters = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
   return String((0..<length).map{ _ in letters.randomElement()! })
 }
-/*
-private func generate_rsa_key(int modulus_size, BIGNUM* exponent) -> *RSA {
-    let RSA* key = RSA_new()
-    if (key != nil)
-    {
-        if (!RSA_generate_key_ex(key, modulus_size, exponent, 0))
-        {
-            RSA_free(key)
-            return nil
-        }
-    }
-    return key
-}
-*/
-
-func generateSSHKeyPair(passphrase: String, publicKey: UnsafeMutablePointer<CChar>, privateKey: UnsafeMutablePointer<CChar>) {
-    // Use OpenSSL to generate the RSA key pair
-    // Define the buffer as an array of characters with a maximum length of 256
-    // MySSL.keyGenWithPassPhrase("", publicKey, privateKey);
-    passphrase.withCString { (ptr) in
-        let result = MySSL.keyGenPublicKey(publicKey,
-                                           privateKey: privateKey,
-                                           passphrase: nil)
-    }
-}
-
 
 @objc(SSHPlugin) public class SSHPlugin: CAPPlugin {
     private var sessions: [String: Session] = [:]
@@ -141,25 +115,6 @@ func generateSSHKeyPair(passphrase: String, publicKey: UnsafeMutablePointer<CCha
         guard let privateKey = call.getString("privateKey") else {
             return call.reject("Must provide a privateKey") }
     
-		if publicKey == "TBD" {
-            // no key. generate it and return
-            // let passphrase = generateKey(20)
-            let passphrase = ""
-            let publicKeyBuffer = UnsafeMutablePointer<CChar>.allocate(capacity: 2048)
-            let privateKeyBuffer = UnsafeMutablePointer<CChar>.allocate(capacity: 4096)
-            generateSSHKeyPair(passphrase: passphrase, publicKey: publicKeyBuffer, privateKey: privateKeyBuffer)
-            call.resolve(["publicKey": String(cString: publicKeyBuffer), "privateKey": String(cString: privateKeyBuffer)])
-
-
-            // Use the keys with libssh2_userauth_publickey_frommemory
-            /*
-            let publicKey = String(cString: publicKeyBuffer)
-            let privateKey = String(cString: privateKeyBuffer)
-            libssh2_userauth_publickey_frommemory(...)
-            */
-			// TODO: store key
-            return
-		} 
         let session = Session(host: host, port: port, username: user)
         if session.connect(call: call,
                            publicKey: publicKey,
