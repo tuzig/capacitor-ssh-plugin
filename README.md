@@ -52,7 +52,7 @@ connect to a host using a username & password
 ### startSessionByKey(...)
 
 ```typescript
-startSessionByKey(options: StartByKey) => Promise<SSHSessionID>
+startSessionByKey(options: StartByKey) => Promise<{ session: string; }>
 ```
 
 connect to a host using an identity key. The pa
@@ -61,7 +61,7 @@ connect to a host using an identity key. The pa
 | ------------- | ------------------------------------------------- |
 | **`options`** | <code><a href="#startbykey">StartByKey</a></code> |
 
-**Returns:** <code>Promise&lt;string&gt;</code>
+**Returns:** <code>Promise&lt;{ session: string; }&gt;</code>
 
 --------------------
 

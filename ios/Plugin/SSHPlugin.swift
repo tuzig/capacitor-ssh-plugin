@@ -123,7 +123,7 @@ private func generateKey(length: Int = 10) -> String {
             let key = generateKey()
             self.sessions[key] = session
             call.resolve(["session": key])
-        } // no need for an else as the call was already rejected
+        } // no need for an else as session.connect calls reject
     }
     
 }

@@ -8,8 +8,7 @@ export class SSHWeb extends WebPlugin implements SSHPlugin {
   startSessionByPasswd = async (_: StartByPasswd): Promise<SSHSessionID> => {
       throw this.unimplemented('Not implemented on web');
   }
-
-  startSessionByKey = async (_: StartByKey): Promise<SSHSessionID> => {
+  startSessionByKey = async (_: StartByKey): Promise<{session: SSHSessionID}> => {
       throw this.unimplemented('Not implemented on web');
   }
   newChannel(_: { session: SSHSessionID, pty?: TerminalType}): Promise<{ id: number }> {
