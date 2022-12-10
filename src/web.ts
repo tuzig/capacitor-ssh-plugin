@@ -1,10 +1,14 @@
 import { WebPlugin } from '@capacitor/core';
 
-import type { SSHPlugin, TerminalType, StartByPasswd, SSHChannelID, STDOutCallback, SSHSessionID } from './definitions';
+import type { SSHPlugin, TerminalType, StartByPasswd, StartByKey,
+    SSHChannelID, STDOutCallback, SSHSessionID } from './definitions';
 
 export class SSHWeb extends WebPlugin implements SSHPlugin {
   CB: STDOutCallback | undefined
   startSessionByPasswd = async (_: StartByPasswd): Promise<SSHSessionID> => {
+      throw this.unimplemented('Not implemented on web');
+  }
+  startSessionByKey = async (_: StartByKey): Promise<{session: SSHSessionID}> => {
       throw this.unimplemented('Not implemented on web');
   }
   newChannel(_: { session: SSHSessionID, pty?: TerminalType}): Promise<{ id: number }> {

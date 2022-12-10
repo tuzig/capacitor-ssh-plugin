@@ -15,6 +15,7 @@ private func generateKey(length: Int = 10) -> String {
     private var sessions: [String: Session] = [:]
     private var channels: [Int: Channel] = [:]
     private var lastChannleID: Int = 0
+
     @objc func startSessionByPasswd(_ call: CAPPluginCall) {
         guard let host = call.getString("address") else {
             return call.reject("Must provide an address") }
@@ -103,7 +104,28 @@ private func generateKey(length: Int = 10) -> String {
         channel.resize(width: UInt(width), height: UInt(height))
         call.resolve()
     }
-
+    @objc func startSessionByKey(_ call: CAPPluginCall) {
+        guard let host = call.getString("address") else {
+            return call.reject("Must provide an address") }
+        let port = call.options["port"] as? Int ?? 22
+        guard let user = call.getString("username") else {
+            return call.reject("Must provide a username") }
+        guard let publicKey = call.getString("publicKey") else {
+            return call.reject("Must provide a publicKey") }
+        guard let privateKey = call.getString("privateKey") else {
+            return call.reject("Must provide a privateKey") }
+    
+        let session = Session(host: host, port: port, username: user)
+        if session.connect(call: call,
+                           publicKey: publicKey,
+                           privateKey: privateKey,
+                           passphrase: "") {
+            let key = generateKey()
+            self.sessions[key] = session
+            call.resolve(["session": key])
+        } // no need for an else as session.connect calls reject
+    }
+    
 }
 @objc private class Session: NSObject, NMSSHSessionDelegate {
     var call: CAPPluginCall?
@@ -125,6 +147,28 @@ private func generateKey(length: Int = 10) -> String {
                 call.keepAlive = true
             } else {
                 call.reject("Wrong password")
+                return false
+            }
+        } else {
+            call.reject("Failed to connect")
+            return false
+        }
+        return true
+    }
+    func connect(call: CAPPluginCall, publicKey: String, privateKey: String,
+                 passphrase: String) -> Bool {
+        self.call = call
+        let session = self.session
+        session.delegate = self
+        session.connect()
+        if session.isConnected {
+            session.authenticateBy(inMemoryPublicKey: publicKey,
+                                 privateKey: privateKey,
+                                 andPassword: passphrase)
+            if session.isAuthorized {
+                call.keepAlive = true
+            } else {
+                call.reject("UNAUTHORIZED")
                 return false
             }
         } else {
