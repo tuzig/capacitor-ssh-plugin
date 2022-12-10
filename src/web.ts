@@ -27,12 +27,6 @@ export class SSHWeb extends WebPlugin implements SSHPlugin {
   setPtySize(_: { channel: number, width: number, height: number }): Promise<void> {
       throw this.unimplemented('Not implemented on web');
   };
-  getPublicKey(_: {tag: string}): Promise<{ publickey: string }> {
-      throw this.unimplemented('Not implemented on web');
-  }
-  deleteKey(_: {tag: string}): Promise<void> {
-      throw this.unimplemented('Not implemented on web');
-  }
   /*
   startSessionByKeys(options: SessionByKeys): Promise<{ session: string}>;
   isHostKnown(options: { session: string } ): Promise< KnownHostStatus >;

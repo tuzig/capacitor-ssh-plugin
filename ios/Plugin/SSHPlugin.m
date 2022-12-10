@@ -6,8 +6,6 @@
 CAP_PLUGIN(SSHPlugin, "SSH",
            CAP_PLUGIN_METHOD(startSessionByPasswd, CAPPluginReturnPromise);
            CAP_PLUGIN_METHOD(startSessionByKey, CAPPluginReturnPromise);
-           CAP_PLUGIN_METHOD(getPublicKey, CAPPluginReturnPromise);
-           CAP_PLUGIN_METHOD(deleteKey, CAPPluginReturnPromise);
            CAP_PLUGIN_METHOD(newChannel, CAPPluginReturnPromise);
            CAP_PLUGIN_METHOD(closeChannel, CAPPluginReturnNone);
            CAP_PLUGIN_METHOD(closeSession, CAPPluginReturnNone);

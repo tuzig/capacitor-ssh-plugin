@@ -88,6 +88,4 @@ export interface SSHPlugin {
      * change the pseudo tty size
      */
     setPtySize(options: { channel: number, width: number, height: number }): Promise<void>
-    getPublicKey(options: {tag: string}): Promise<{ publickey: string }>
-    deleteKey(options: {tag: string}): Promise<void>
 }

@@ -21,8 +21,6 @@ npx cap sync
 * [`writeToChannel(...)`](#writetochannel)
 * [`closeChannel(...)`](#closechannel)
 * [`setPtySize(...)`](#setptysize)
-* [`getPublicKey(...)`](#getpublickey)
-* [`deleteKey(...)`](#deletekey)
 * [Interfaces](#interfaces)
 * [Type Aliases](#type-aliases)
 * [Enums](#enums)
@@ -142,34 +140,6 @@ setPtySize(options: { channel: number; width: number; height: number; }) => Prom
 | Param         | Type                                                             |
 | ------------- | ---------------------------------------------------------------- |
 | **`options`** | <code>{ channel: number; width: number; height: number; }</code> |
-
---------------------
-
-
-### getPublicKey(...)
-
-```typescript
-getPublicKey(options: { tag: string; }) => Promise<{ publickey: string; }>
-```
-
-| Param         | Type                          |
-| ------------- | ----------------------------- |
-| **`options`** | <code>{ tag: string; }</code> |
-
-**Returns:** <code>Promise&lt;{ publickey: string; }&gt;</code>
-
---------------------
-
-
-### deleteKey(...)
-
-```typescript
-deleteKey(options: { tag: string; }) => Promise<void>
-```
-
-| Param         | Type                          |
-| ------------- | ----------------------------- |
-| **`options`** | <code>{ tag: string; }</code> |
 
 --------------------
 
