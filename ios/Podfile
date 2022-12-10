@@ -1,18 +1,17 @@
 source 'https://github.com/CocoaPods/Specs.git'
 
-platform :ios, '15.0'
+platform :ios, '13.0'
 
 def capacitor_pods
   # Comment the next line if you're not using Swift and don't want to use dynamic frameworks
   use_frameworks!
   pod 'Capacitor', :path => '../node_modules/@capacitor/ios'
   pod 'CapacitorCordova', :path => '../node_modules/@capacitor/ios'
+  pod 'NMSSHT7', '~> 2.9'
 end
 
 target 'Plugin' do
   capacitor_pods
-  pod 'NMSSHT7', :path => '../../NMSSH'
-  pod 'openssl-iosx', '= 1.1.1q.1'
 end
 
 target 'PluginTests' do
