@@ -1,6 +1,6 @@
 {
   "name": "capacitor-ssh-plugin",
-  "version": "0.3-pre",
+  "version": "0.3",
   "description": "Supporting libssh2 sessions and channels on ios",
   "main": "dist/plugin.cjs.js",
   "module": "dist/esm/index.js",
