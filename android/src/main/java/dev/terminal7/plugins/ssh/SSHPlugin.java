@@ -147,8 +147,8 @@ public class SSHPlugin extends Plugin {
                             JSObject ret = new JSObject();
                             ret.put("data", data);
                             call.resolve(ret);
+                            channel.clear();
                         }
-                        Thread.sleep(100);
                     } catch (Exception e) {
                         JSObject ret = new JSObject();
                         ret.put("error", e.getMessage());

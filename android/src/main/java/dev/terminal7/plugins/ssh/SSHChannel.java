@@ -36,6 +36,10 @@ public class SSHChannel {
         return this.out.toString();
     }
 
+    public void clear() {
+        this.out.reset();
+    }
+
     public void resize(int width, int height) throws JSchException {
         this.channel.setPtySize(width, height, 0, 0);
     }
