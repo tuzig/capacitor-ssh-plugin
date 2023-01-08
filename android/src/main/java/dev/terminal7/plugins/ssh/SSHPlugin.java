@@ -138,7 +138,6 @@ public class SSHPlugin extends Plugin {
             if (command.length() > 0) {
                 channel.write(command + "\n");
             }
-            Thread.sleep(2000);
             new Thread(() -> {
                 while (true) {
                     try {
