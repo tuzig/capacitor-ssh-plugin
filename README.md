@@ -1,7 +1,7 @@
 # capacitor-ssh-plugin
 
 Supporting libssh2 sessions and channels.
-iOS only for now :-(
+Supports both iOS and Android.
 
 ## Install
 
