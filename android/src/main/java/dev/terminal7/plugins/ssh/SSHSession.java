@@ -15,8 +15,8 @@ public class SSHSession {
         this.session.setConfig("StrictHostKeyChecking", "no");
     }
 
-    public ChannelShell openChannel(String type) throws JSchException {
-        return (ChannelShell) this.session.openChannel(type);
+    public Channel openChannel(String type) throws JSchException {
+        return this.session.openChannel(type);
     }
 
     public void connect(String password) throws JSchException {

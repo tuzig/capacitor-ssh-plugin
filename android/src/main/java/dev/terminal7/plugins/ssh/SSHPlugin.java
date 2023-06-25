@@ -134,9 +134,10 @@ public class SSHPlugin extends Plugin {
         String command = call.getString("command", "");
         try {
             call.setKeepAlive(true);
-            channel.startShell();
-            if (command.length() > 0) {
-                channel.write(command + "\n");
+            if (command.length() > 0 && !command.equals("*")) {
+                channel.startExec(command);
+            } else {
+                channel.startShell();
             }
             new Thread(() -> {
                 while (true) {
