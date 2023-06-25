@@ -2,6 +2,8 @@ package dev.terminal7.plugins.ssh;
 
 import com.jcraft.jsch.*;
 
+import java.util.UUID;
+
 public class SSHSession {
 
     private final JSch jsch;
@@ -23,7 +25,7 @@ public class SSHSession {
     }
 
     public void connect(String publicKey, String privateKey, String passphrase) throws JSchException {
-        this.jsch.addIdentity(privateKey, publicKey, passphrase.getBytes());
+        this.jsch.addIdentity(UUID.randomUUID().toString(), privateKey.getBytes(), publicKey.getBytes(), passphrase.getBytes());
         this.session.connect();
     }
 
