@@ -8,25 +8,20 @@ import java.io.IOException;
 public class SSHChannel {
 
     private final SSHSession session;
+    private final byte[] buffer;
     private Channel channel;
-    private PipedOutputStream pin;
-    private ByteArrayOutputStream out;
+    private InputStream in;
+    private OutputStream out;
 
     public SSHChannel(SSHSession session) throws JSchException {
         this.session = session;
-    }
-
-    public void openPipes() throws IOException {
-        PipedInputStream in = new PipedInputStream();
-        this.pin = new PipedOutputStream(in);
-        this.out = new ByteArrayOutputStream();
-        this.channel.setInputStream(in);
-        this.channel.setOutputStream(this.out);
+        this.buffer = new byte[1024];
     }
 
     public void startShell() throws JSchException, IOException {
         this.channel = this.session.openChannel("shell");
-        this.openPipes();
+        this.in = this.channel.getInputStream();
+        this.out = this.channel.getOutputStream();
         this.channel.connect();
     }
 
@@ -35,7 +30,8 @@ public class SSHChannel {
         this.channel = channel;
         channel.setCommand(command);
         channel.setPty(true);
-        this.openPipes();
+        this.in = channel.getInputStream();
+        this.out = channel.getOutputStream();
         channel.connect();
     }
 
@@ -44,15 +40,19 @@ public class SSHChannel {
     }
 
     public void write(String message) throws JSchException, IOException {
-        this.pin.write(message.getBytes());
+        this.out.write(message.getBytes());
+        this.out.flush();
     }
 
-    public String read() throws JSchException, IOException {
-        return this.out.toString();
+    public boolean readAvailable() throws IOException {
+        return this.in.available() > 0;
     }
 
-    public void clear() {
-        this.out.reset();
+    public String read() throws IOException {
+        int i = this.in.read(this.buffer);
+        if (i < 0)
+            return null;
+        return new String(this.buffer, 0, i);
     }
 
     public void resize(int width, int height) {

@@ -139,27 +139,28 @@ public class SSHPlugin extends Plugin {
             } else {
                 channel.startShell();
             }
-            new Thread(() -> {
-                while (true) {
-                    try {
-                        String data = channel.read();
-                        if (data.length() > 0) {
-                            JSObject ret = new JSObject();
-                            ret.put("data", data);
-                            call.resolve(ret);
-                            channel.clear();
-                        }
-                    } catch (Exception e) {
-                        JSObject ret = new JSObject();
-                        ret.put("error", e.getMessage());
-                        call.resolve(ret);
-                        break;
-                    }
-                }
-            }).start();
         } catch (Exception e) {
             call.reject("Failed to start shell: " + e.getMessage());
         }
+        new Thread(() -> {
+            while (true) {
+                try {
+                    while (channel.readAvailable()) {
+                        String data = channel.read();
+                        if (data != null) {
+                            JSObject ret = new JSObject();
+                            ret.put("data", data);
+                            call.resolve(ret);
+                        }
+                    }
+                } catch (Exception e) {
+                    JSObject ret = new JSObject();
+                    ret.put("error", e.getMessage());
+                    call.resolve(ret);
+                    break;
+                }
+            }
+        }).start();
     }
 
     @PluginMethod
