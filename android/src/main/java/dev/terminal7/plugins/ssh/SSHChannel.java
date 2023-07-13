@@ -44,7 +44,9 @@ public class SSHChannel {
         this.out.flush();
     }
 
-    public boolean readAvailable() throws IOException {
+    public boolean readAvailable() throws Exception {
+        if (this.channel.isEOF())
+            throw new Exception("EOF");
         return this.in.available() > 0;
     }
 
