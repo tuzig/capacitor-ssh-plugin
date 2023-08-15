@@ -1,6 +1,6 @@
 {
   "name": "capacitor-ssh-plugin",
-  "version": "0.5.2",
+  "version": "0.5.4",
   "description": "Supporting ssh sessions and channels on ios and android",
   "main": "dist/plugin.cjs.js",
   "module": "dist/esm/index.js",
