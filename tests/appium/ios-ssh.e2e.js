@@ -12,8 +12,8 @@ const IOS_APP = requiredEnv('IOS_APP');
 const SSH_PASSWORD = requiredEnv('SSH_PASSWORD');
 
 const sshOptions = {
-  address: process.env.SSH_HOST || 'localhost',
-  port: Number(process.env.SSH_PORT || 22),
+  address: requiredEnv('SSH_HOST'),
+  port: parsePort(process.env.SSH_PORT || '22'),
   username: process.env.SSH_USERNAME || 'jrandom',
   password: SSH_PASSWORD,
 };
@@ -50,6 +50,14 @@ function requiredEnv(name) {
     throw new Error(`${name} is required when RUN_APPIUM_SSH_E2E=1`);
   }
   return value;
+}
+
+function parsePort(raw) {
+  const port = Number(raw);
+  if (!Number.isInteger(port) || port < 1 || port > 65535) {
+    throw new Error(`SSH_PORT must be an integer between 1 and 65535 (received: ${raw})`);
+  }
+  return port;
 }
 
 function optionalCapability(envName, capabilityName) {
