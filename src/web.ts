@@ -18,7 +18,7 @@ export class SSHWeb extends WebPlugin implements SSHPlugin {
       this.CB = callback
       throw this.unimplemented('Not implemented on web');
   };
-  writeToChannel = async (_: { channel: number, s: string }): Promise< void > => {
+  writeToChannel = async (_: { channel: number, message: string }): Promise< void > => {
       throw this.unimplemented('Not implemented on web');
   }
   closeChannel= async (_: { channel: number }): Promise<void> => {

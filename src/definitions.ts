@@ -79,7 +79,7 @@ export interface SSHPlugin {
     /**
      * writes a message to an open channel
      */
-    writeToChannel(options: { channel: number, s: string }): Promise<void>
+    writeToChannel(options: { channel: number, message: string }): Promise<void>
     /*
      * all good things come to an end and so is the `channel`
      */
