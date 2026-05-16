@@ -28,6 +28,9 @@
     "native"
   ],
   "scripts": {
+    "test": "npm run test:contract",
+    "test:contract": "node tests/ssh-contract.test.js",
+    "test:e2e:ios": "node tests/appium/ios-ssh.e2e.js",
     "verify": "npm run verify:ios && npm run verify:android && npm run verify:web",
     "verify:ios": "cd ios && pod install && xcodebuild -workspace Plugin.xcworkspace -scheme Plugin && cd ..",
     "verify:android": "cd android && ./gradlew clean build test && cd ..",

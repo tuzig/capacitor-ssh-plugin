@@ -106,14 +106,14 @@ arrive on the channel.
 ### writeToChannel(...)
 
 ```typescript
-writeToChannel(options: { channel: number; s: string; }) => Promise<void>
+writeToChannel(options: { channel: number; message: string; }) => Promise<void>
 ```
 
 writes a message to an open channel
 
 | Param         | Type                                         |
 | ------------- | -------------------------------------------- |
-| **`options`** | <code>{ channel: number; s: string; }</code> |
+| **`options`** | <code>{ channel: number; message: string; }</code> |
 
 --------------------
 
