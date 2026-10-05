@@ -28,6 +28,9 @@
     "native"
   ],
   "scripts": {
+    "test": "npm run test:web",
+    "test:web": "npm run test:compile && node --test tests/web.test.cjs",
+    "test:compile": "tsc -p tsconfig.test.json",
     "verify": "npm run verify:ios && npm run verify:android && npm run verify:web",
     "verify:ios": "cd ios && pod install && xcodebuild -workspace Plugin.xcworkspace -scheme Plugin && cd ..",
     "verify:android": "cd android && ./gradlew clean build test && cd ..",

@@ -1,6 +1,7 @@
 # node files
 dist
 node_modules
+.test-build
 
 # iOS files
 Pods

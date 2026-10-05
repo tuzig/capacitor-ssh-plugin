@@ -21,6 +21,22 @@ This guide provides instructions for contributing to this Capacitor plugin.
 
 ### Scripts
 
+#### `npm test`
+
+Run the offline web unit tests with Node.js 18 or later after installing the
+development dependencies. The test compiler builds the actual plugin source into
+the ignored `.test-build/` directory; Node's built-in test runner then imports its
+public entry with the real Capacitor dependency.
+
+The tests check plugin registration, lazy loading, and the unsupported web API's
+asynchronous `UNIMPLEMENTED` errors, including callback and concurrent-call
+behavior. Network and native bridge calls are blocked during the tests. No SSH
+server, credentials, Appium server, or native device is required.
+
+This is web unit coverage only. It does not validate native SSH sessions or
+channels and does not replace the real iPad/Mac/Appium/XCUITest lab requested in
+[issue #3](https://github.com/tuzig/capacitor-ssh-plugin/issues/3).
+
 #### `npm run build`
 
 Build the plugin web assets and generate plugin API documentation using [`@capacitor/docgen`](https://github.com/ionic-team/capacitor-docgen).
